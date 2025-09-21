@@ -1,0 +1,52 @@
+cmake_minimum_required(VERSION 3.8)
+project(hma2_pcl_reconst)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(image_geometry REQUIRED)
+find_package(depth_image_proc REQUIRED)
+
+include_directories(include)
+
+# for compopnent
+add_library(${PROJECT_NAME} SHARED
+  src/pcl_xyzrgb_component.cpp
+)
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+
+ament_target_dependencies(${PROJECT_NAME}
+  rclcpp
+  rclcpp_components
+  sensor_msgs
+  image_transport
+  cv_bridge
+  image_geometry
+  depth_image_proc
+)
+
+# register my component
+rclcpp_components_register_nodes(${PROJECT_NAME}
+  "hma2_pcl_reconst::PointCloudXyzrgb")
+
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
+
+install(DIRECTORY include/
+  DESTINATION include)
+
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
+
+ament_package()
+

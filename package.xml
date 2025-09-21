@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>hma2_pcl_reconst</name>
+  <version>0.0.1</version>
+  <description>HSR RGB-D → XYZRGB PointCloud Component</description>
+
+  <maintainer email="yourmail@example.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>sensor_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_geometry</depend>
+  <depend>depth_image_proc</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <rclcpp_components/>
+  </export>
+</package>
+
