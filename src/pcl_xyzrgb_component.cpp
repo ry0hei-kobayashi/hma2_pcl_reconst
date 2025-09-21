@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <limits>
@@ -42,14 +43,15 @@ public:
     this->declare_parameter("exact_sync", false);
     this->declare_parameter("topic_rgb", "/head_rgbd_sensor/rgb/image_rect_color");
     this->declare_parameter("topic_depth", "/head_rgbd_sensor/depth_registered/image_rect_raw");
-    //this->declare_parameter("topic_rgb", "/head_rgbd_sensor/image");
-    //this->declare_parameter("topic_depth", "/head_rgbd_sensor/image");
+    //this->declare_parameter("topic_rgb", "/head_rgbd_sensor/rgb/image_raw");
+    //this->declare_parameter("topic_depth", "/head_rgbd_sensor/depth_registered/image_raw");
     this->declare_parameter("use_compressed", false);
 
     bool use_compressed = this->get_parameter("use_compressed").as_bool();
 
     topic_rgb_ = this->get_parameter("topic_rgb").as_string();
     topic_depth_ = this->get_parameter("topic_depth").as_string();
+
     rgb_transport_ = use_compressed ? "compressed" : "raw";
     depth_transport_ = use_compressed ? "compressedDepth" : "raw";
 
@@ -59,17 +61,11 @@ public:
     int queue_size = this->get_parameter("queue_size").as_int();
     bool exact_sync = this->get_parameter("exact_sync").as_bool();
 
-
     rclcpp::QoS qos(10);
     pub_point_cloud_ = this->create_publisher<PointCloud>("/hma_pcl_reconst/depth_registered/points", qos);
 
-
-
     std::string rgb_transport = use_compressed ? "compressed" : "raw";
     std::string depth_transport = use_compressed ? "compressedDepth" : "raw";
-
-    //sub_rgb_.subscribe(this, topic_rgb, rgb_transport, rmw_qos_profile_sensor_data);
-    //sub_depth_.subscribe(this, topic_depth ,depth_transport, rmw_qos_profile_sensor_data);
 
     if (exact_sync) {
       exact_sync_ = std::make_shared<ExactSync>(
@@ -90,23 +86,23 @@ public:
         model_.fromCameraInfo(msg);
       });
 
-    timer_ = this->create_wall_timer(100ms, [this]() {
+    timer_ = this->create_wall_timer(1000ms, [this]() {
     auto subs = pub_point_cloud_->get_subscription_count();
     
     if (subs > 0) {
       if (!subscribed_) {
         this->startSubscribing();
-        RCLCPP_INFO(this->get_logger(), "New subscriber detected, subscribing to topics.");
+        RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst.-> New subscriber detected, subscribing to topics.");
       }
     } else {
       if (subscribed_) {
         this->stopSubscribing();
-        RCLCPP_INFO(this->get_logger(), "No subscribers, unsubscribing from topics.");
+        RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst.-> No subscribers, unsubscribing from topics.");
         }
       }
     });
 
-    RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst -> component initialized");
+    RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst.-> component initialized");
   }
 
 private:
@@ -144,22 +140,25 @@ private:
 
     PointCloud::SharedPtr cloud_msg(new PointCloud);
     cloud_msg->header = depth_msg->header;
-    cloud_msg->height = depth_msg->height;
-    cloud_msg->width = depth_msg->width;
     cloud_msg->is_dense = false;
+    cloud_msg->is_bigendian = false;
+
+    const uint32_t w = depth_msg->width;
+    const uint32_t h = depth_msg->height;
 
     sensor_msgs::PointCloud2Modifier mod(*cloud_msg);
-    mod.setPointCloud2Fields(
-      7,
-      "x", 1, sensor_msgs::msg::PointField::FLOAT32,
-      "y", 1, sensor_msgs::msg::PointField::FLOAT32,
-      "z", 1, sensor_msgs::msg::PointField::FLOAT32,
-      "r", 1, sensor_msgs::msg::PointField::UINT8,
-      "g", 1, sensor_msgs::msg::PointField::UINT8,
-      "b", 1, sensor_msgs::msg::PointField::UINT8,
-      "a", 1, sensor_msgs::msg::PointField::UINT8
-    );
-    mod.resize(cloud_msg->width * cloud_msg->height);
+    mod.setPointCloud2FieldsByString(2, "xyz", "rgb");
+    mod.resize(w * h);
+
+    cloud_msg->width = w;
+    cloud_msg->height = h;
+
+    cloud_msg->row_step = cloud_msg->point_step * cloud_msg->width;
+
+    // RCLCPP_INFO(this->get_logger(),
+    //   "Cloud initialized: %dx%d point_step=%d row_step=%d",
+    //   cloud_msg->width, cloud_msg->height,
+    //   cloud_msg->point_step, cloud_msg->row_step);
 
     // convert depends on depth type
     if (depth_msg->encoding == enc::TYPE_16UC1) {
@@ -189,7 +188,6 @@ private:
       } else if (sync_) {
         sync_->connectInput(sub_depth_, sub_rgb_);
       }
-  
       subscribed_ = true;
     }
   }
@@ -218,21 +216,19 @@ private:
 
     const T * depth_row = reinterpret_cast<const T *>(&depth_msg->data[0]);
     int row_step = depth_msg->step / sizeof(T);
-    const uint8_t * rgb = &rgb_msg->data[0];
-    int color_step = 3;  // RGB8
+    const uint8_t * rgb_data = &rgb_msg->data[0];
+    int rgb_row_step = rgb_msg->step;  // RGB8
 
     sensor_msgs::PointCloud2Iterator<float> iter_x(*cloud_msg, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(*cloud_msg, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(*cloud_msg, "z");
-    sensor_msgs::PointCloud2Iterator<uint8_t> iter_r(*cloud_msg, "r");
-    sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(*cloud_msg, "g");
-    sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*cloud_msg, "b");
-    sensor_msgs::PointCloud2Iterator<uint8_t> iter_a(*cloud_msg, "a");
+    sensor_msgs::PointCloud2Iterator<float> iter_rgb(*cloud_msg, "rgb");
 
+    // TODO: optimize loop
     for (int v = 0; v < static_cast<int>(cloud_msg->height); ++v, depth_row += row_step) {
+      const uint8_t * rgb_row = rgb_data + v * rgb_row_step;
       for (int u = 0; u < static_cast<int>(cloud_msg->width);
-           ++u, rgb += color_step,
-           ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b, ++iter_a)
+          ++u, ++iter_x, ++iter_y, ++iter_z, ++iter_rgb)
       {
         T depth = depth_row[u];
         if (!hma2_pcl_reconst::DepthTraits<T>::valid(depth)) {
@@ -242,16 +238,16 @@ private:
           *iter_y = (v - center_y) * depth * constant_y;
           *iter_z = hma2_pcl_reconst::DepthTraits<T>::toMeters(depth);
         }
-        *iter_r = rgb[0];
-        *iter_g = rgb[1];
-        *iter_b = rgb[2];
-        *iter_a = 255;
+        const uint8_t * pixel = rgb_row + u * 3;
+        uint8_t r = pixel[0];
+        uint8_t g = pixel[1];
+        uint8_t b = pixel[2];
+        uint32_t rgb = (r << 16) | (g << 8) | b;
+        *iter_rgb = *reinterpret_cast<float *>(&rgb);
       }
     }
   }
 };
 
 } // namespace hma2_pcl_reconst
-
 RCLCPP_COMPONENTS_REGISTER_NODE(hma2_pcl_reconst::PointCloudXyzrgb)
-
