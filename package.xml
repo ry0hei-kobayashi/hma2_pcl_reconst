@@ -2,9 +2,10 @@
 <package format="3">
   <name>hma2_pcl_reconst</name>
   <version>0.0.1</version>
-  <description>HSR RGB-D → XYZRGB PointCloud Component</description>
+  <description>RGB+Depth -> XYZRGB PointCloud Component</description>
 
-  <maintainer email="yourmail@example.com">Your Name</maintainer>
+  <author>Ryohei Kobayashi</author>
+  <maintainer email="kobayashi.ryohei621@mail.kyutech.jp">ry0hei-kobayashi</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

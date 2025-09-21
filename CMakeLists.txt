@@ -33,7 +33,7 @@ ament_target_dependencies(${PROJECT_NAME}
   depth_image_proc
 )
 
-# register my component
+# register component
 rclcpp_components_register_nodes(${PROJECT_NAME}
   "hma2_pcl_reconst::PointCloudXyzrgb")
 
