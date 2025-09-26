@@ -61,7 +61,9 @@ public:
     int queue_size = this->get_parameter("queue_size").as_int();
     bool exact_sync = this->get_parameter("exact_sync").as_bool();
 
-    rclcpp::QoS qos(10);
+    //rclcpp::QoS qos(10);
+    auto qos = rclcpp::SensorDataQoS();
+
     pub_point_cloud_ = this->create_publisher<PointCloud>("/hma_pcl_reconst/depth_registered/points", qos);
 
     std::string rgb_transport = use_compressed ? "compressed" : "raw";
