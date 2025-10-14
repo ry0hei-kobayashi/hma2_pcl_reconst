@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(hma2_pcl_reconst)
+project(hma_pcl_reconst2)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -35,7 +35,7 @@ ament_target_dependencies(${PROJECT_NAME}
 
 # register component
 rclcpp_components_register_nodes(${PROJECT_NAME}
-  "hma2_pcl_reconst::PointCloudXyzrgb")
+  "hma_pcl_reconst2::PointCloudXyzrgb")
 
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION lib

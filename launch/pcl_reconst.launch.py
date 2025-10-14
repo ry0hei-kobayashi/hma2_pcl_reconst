@@ -10,8 +10,8 @@ def generate_launch_description():
         executable="component_container_mt",
         composable_node_descriptions=[
             ComposableNode(
-                package="hma2_pcl_reconst",
-                plugin="hma2_pcl_reconst::PointCloudXyzrgb",
+                package="hma_pcl_reconst2",
+                plugin="hma_pcl_reconst2::PointCloudXyzrgb",
                 name="pcl_reconst",
                 parameters=[{
                     "queue_size": 5,

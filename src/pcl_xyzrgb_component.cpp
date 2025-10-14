@@ -23,9 +23,9 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc.hpp>
 
-#include "hma2_pcl_reconst/depth_traits.hpp"
+#include "hma_pcl_reconst2/depth_traits.hpp"
 
-namespace hma2_pcl_reconst
+namespace hma_pcl_reconst2
 {
 
 namespace enc = sensor_msgs::image_encodings;
@@ -94,17 +94,17 @@ public:
     if (subs > 0) {
       if (!subscribed_) {
         this->startSubscribing();
-        RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst.-> New subscriber detected, subscribing to topics.");
+        RCLCPP_INFO(this->get_logger(), "hma_pcl_reconst2.-> New subscriber detected, subscribing to topics.");
       }
     } else {
       if (subscribed_) {
         this->stopSubscribing();
-        RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst.-> No subscribers, unsubscribing from topics.");
+        RCLCPP_INFO(this->get_logger(), "hma_pcl_reconst2.-> No subscribers, unsubscribing from topics.");
         }
       }
     });
 
-    RCLCPP_INFO(this->get_logger(), "hma2_pcl_reconst.-> component initialized");
+    RCLCPP_INFO(this->get_logger(), "hma_pcl_reconst2.-> component initialized");
   }
 
 private:
@@ -211,7 +211,7 @@ private:
   {
     float center_x = model_.cx();
     float center_y = model_.cy();
-    double unit_scaling = hma2_pcl_reconst::DepthTraits<T>::toMeters(T(1));
+    double unit_scaling = hma_pcl_reconst2::DepthTraits<T>::toMeters(T(1));
     float constant_x = unit_scaling / model_.fx();
     float constant_y = unit_scaling / model_.fy();
     float bad_point = std::numeric_limits<float>::quiet_NaN();
@@ -233,12 +233,12 @@ private:
           ++u, ++iter_x, ++iter_y, ++iter_z, ++iter_rgb)
       {
         T depth = depth_row[u];
-        if (!hma2_pcl_reconst::DepthTraits<T>::valid(depth)) {
+        if (!hma_pcl_reconst2::DepthTraits<T>::valid(depth)) {
           *iter_x = *iter_y = *iter_z = bad_point;
         } else {
           *iter_x = (u - center_x) * depth * constant_x;
           *iter_y = (v - center_y) * depth * constant_y;
-          *iter_z = hma2_pcl_reconst::DepthTraits<T>::toMeters(depth);
+          *iter_z = hma_pcl_reconst2::DepthTraits<T>::toMeters(depth);
         }
         const uint8_t * pixel = rgb_row + u * 3;
         uint8_t r = pixel[0];
@@ -251,5 +251,5 @@ private:
   }
 };
 
-} // namespace hma2_pcl_reconst
-RCLCPP_COMPONENTS_REGISTER_NODE(hma2_pcl_reconst::PointCloudXyzrgb)
+} // namespace hma_pcl_reconst2
+RCLCPP_COMPONENTS_REGISTER_NODE(hma_pcl_reconst2::PointCloudXyzrgb)

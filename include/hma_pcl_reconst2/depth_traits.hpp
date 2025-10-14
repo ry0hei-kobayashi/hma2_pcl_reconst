@@ -3,7 +3,7 @@
 #include <cmath>
 #include <limits>
 
-namespace hma2_pcl_reconst
+namespace hma_pcl_reconst2
 {
 
 // DepthTraits template declaration
@@ -27,5 +27,5 @@ struct DepthTraits<float>
   static inline float fromMeters(float depth) { return depth; }
 };
 
-}  // namespace hma2_pcl_reconst
+}  // namespace hma_pcl_reconst2
 
