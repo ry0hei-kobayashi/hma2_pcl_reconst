@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>hma2_pcl_reconst</name>
+  <name>hma_pcl_reconst2</name>
   <version>0.0.1</version>
   <description>RGB+Depth -> XYZRGB PointCloud Component</description>
 
